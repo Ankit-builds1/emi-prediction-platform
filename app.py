@@ -4,6 +4,7 @@ import numpy as np
 import mlflow
 import os
 import sqlite3
+import joblib
 from datetime import datetime
 
 # ============================================================
@@ -48,6 +49,48 @@ def load_models():
     clf = mlflow.pyfunc.load_model(f"models:/EMI_Eligibility_Classifier/Production")
     reg = mlflow.pyfunc.load_model(f"models:/Max_EMI_Regressor/Production")
     return clf, reg
+
+
+@st.cache_resource
+def load_preprocessors():
+    """Load the scaler, label encoders, and target encoder used during training."""
+    scaler = joblib.load("scaler.pkl")
+    label_encoders = joblib.load("label_encoders.pkl")
+    target_encoder = joblib.load("target_encoder.pkl")
+    return scaler, label_encoders, target_encoder
+
+
+def preprocess_input(input_df, scaler, label_encoders):
+    """Apply the same encoding + scaling used during training, in the same
+    column order the scaler was fit on."""
+    df = input_df.copy()
+
+    # Derived ratio features (must match training feature engineering)
+    df["debt_to_income"] = df["current_emi_amount"] / (df["monthly_salary"] + 1)
+    df["expense_to_income"] = (
+        df["school_fees"] + df["college_fees"] + df["travel_expenses"]
+        + df["groceries_utilities"] + df["other_monthly_expenses"]
+    ) / (df["monthly_salary"] + 1)
+    df["affordability_ratio"] = (
+        df["monthly_salary"] - df["current_emi_amount"] - df["monthly_rent"]
+    ) / (df["monthly_salary"] + 1)
+    df["savings_ratio"] = df["bank_balance"] / (df["monthly_salary"] + 1)
+    df["dependents_ratio"] = df["dependents"] / (df["family_size"] + 1)
+
+    # Apply the same label encoders fit during training
+    for col, le in label_encoders.items():
+        if col in df.columns:
+            # Any unseen category falls back to the encoder's first known class
+            df[col] = df[col].astype(str).apply(
+                lambda x: x if x in le.classes_ else le.classes_[0]
+            )
+            df[col] = le.transform(df[col])
+
+    # Reorder columns to match what the scaler was fit on
+    df = df[scaler.feature_names_in_]
+
+    scaled = scaler.transform(df)
+    return pd.DataFrame(scaled, columns=df.columns)
 
 
 # ============================================================
@@ -154,6 +197,14 @@ elif page == "Predict EMI Eligibility":
     with st.spinner("Loading models from MLflow registry..."):
         clf_model, reg_model = load_models()
 
+    try:
+        scaler, label_encoders, target_encoder = load_preprocessors()
+        preprocessors_ok = True
+    except Exception as e:
+        preprocessors_ok = False
+        st.warning(f"Could not load preprocessing files (scaler.pkl / label_encoders.pkl / "
+                   f"target_encoder.pkl): {e}. Make sure these files are in the repo root.")
+
     st.subheader("Applicant Details")
 
     col1, col2 = st.columns(2)
@@ -198,9 +249,10 @@ elif page == "Predict EMI Eligibility":
         emi_scenario = st.selectbox("EMI Scenario", ["New Loan", "Top Up", "Balance Transfer"])
 
     if st.button("Predict", type="primary"):
-        # NOTE: Replace this block with your actual scaler + label encoders
-        # loaded via joblib if you want exact parity with training preprocessing.
-        # This is a simplified structure matching your training feature set.
+        if not preprocessors_ok:
+            st.error("Cannot predict: preprocessing files are missing. See warning above.")
+            st.stop()
+
         input_dict = {
             "age": age, "gender": gender, "marital_status": marital_status,
             "education": education, "employment_type": employment_type,
@@ -219,8 +271,11 @@ elif page == "Predict EMI Eligibility":
         input_df = pd.DataFrame([input_dict])
 
         try:
-            eligibility_pred = clf_model.predict(input_df)[0]
-            max_emi_pred = reg_model.predict(input_df)[0]
+            processed_df = preprocess_input(input_df, scaler, label_encoders)
+
+            eligibility_pred_encoded = clf_model.predict(processed_df)[0]
+            eligibility_pred = target_encoder.inverse_transform([int(eligibility_pred_encoded)])[0]
+            max_emi_pred = reg_model.predict(processed_df)[0]
 
             st.success("Prediction complete")
             res1, res2 = st.columns(2)
@@ -232,9 +287,6 @@ elif page == "Predict EMI Eligibility":
             st.caption("This prediction has been saved to your records.")
         except Exception as e:
             st.error(f"Prediction failed: {e}")
-            st.info("This usually means the input needs the same preprocessing "
-                    "(scaling/encoding) used during training. Load scaler.pkl and "
-                    "label_encoders.pkl and apply them to input_df before predicting.")
 
 # ============================================================
 # PAGE: DATA EXPLORER
