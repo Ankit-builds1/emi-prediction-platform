@@ -14,13 +14,19 @@ st.set_page_config(page_title="EMI Prediction Platform", layout="wide")
 # ============================================================
 # DAGSHUB / MLFLOW CONNECTION
 # ============================================================
-# Reads from Streamlit secrets (Streamlit Cloud) if available,
-# otherwise falls back to OS environment variables (Render, HF, etc.)
+# Checks OS environment variables first (Render, HF, etc.) —
+# only touches st.secrets if the env var isn't set, since
+# accessing st.secrets when no secrets.toml exists causes
+# Streamlit to display its own error banner regardless of
+# try/except.
 def get_config(key):
+    value = os.environ.get(key)
+    if value:
+        return value
     try:
         return st.secrets[key]
     except Exception:
-        return os.environ.get(key)
+        return None
 
 DAGSHUB_USERNAME = get_config("DAGSHUB_USERNAME")
 DAGSHUB_TOKEN = get_config("DAGSHUB_TOKEN")
