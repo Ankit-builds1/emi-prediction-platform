@@ -9,14 +9,15 @@
 [![MLflow](https://img.shields.io/badge/MLflow-Tracking-0194E2?style=for-the-badge&logo=mlflow&logoColor=white)](https://mlflow.org/)
 [![XGBoost](https://img.shields.io/badge/XGBoost-Model-EB0028?style=for-the-badge)](https://xgboost.readthedocs.io/)
 [![DagsHub](https://img.shields.io/badge/DagsHub-Registry-4C72B0?style=for-the-badge)](https://dagshub.com/)
+[![Render](https://img.shields.io/badge/Render-Deployed-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://render.com/)
 
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)]()
+[![Status](https://img.shields.io/badge/Status-Live-success?style=flat-square)]()
 [![Made with ❤](https://img.shields.io/badge/Made%20with-%E2%9D%A4-red?style=flat-square)]()
 
 *Predicting EMI eligibility and safe monthly repayment limits using Machine Learning, tracked and versioned end-to-end with MLflow.*
 
-[Live Demo](#-live-demo) • [Features](#-features) • [Architecture](#-architecture) • [Setup](#-setup) • [Model Performance](#-model-performance)
+**🔗 [Live App](https://emi-prediction-platform.onrender.com/) • [Features](#-features) • [Architecture](#-architecture) • [Setup](#-setup) • [Model Performance](#-model-performance)**
 
 </div>
 
@@ -32,6 +33,9 @@ The **EMI Prediction Platform** is a full-stack machine learning application tha
 | 📈 **Regression** | Estimate a safe maximum monthly EMI | ₹ Amount |
 
 Built with a production-style MLOps pipeline — from raw data to a deployed, interactive web app.
+
+**👉 Try it live: [emi-prediction-platform.onrender.com](https://emi-prediction-platform.onrender.com/)**
+*(Free-tier hosting — the app may take 30–50 seconds to wake up on first load.)*
 
 ---
 
@@ -71,7 +75,7 @@ graph LR
     C --> D[📦 MLflow Tracking<br/>& Model Registry]
     D --> E[☁️ DagsHub<br/>Hosted MLflow]
     E --> F[🖥️ Streamlit App]
-    F --> G[🚀 Hugging Face<br/>Spaces Deployment]
+    F --> G[🚀 Render<br/>Deployment]
 
     style A fill:#1f2937,stroke:#60a5fa,color:#fff
     style C fill:#1f2937,stroke:#f59e0b,color:#fff
@@ -119,7 +123,7 @@ graph LR
 | **Model Registry Host** | ![DagsHub](https://img.shields.io/badge/-DagsHub-4C72B0?style=flat-square) |
 | **Web App** | ![Streamlit](https://img.shields.io/badge/-Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white) |
 | **Database** | ![SQLite](https://img.shields.io/badge/-SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white) |
-| **Deployment** | ![Hugging Face](https://img.shields.io/badge/-Hugging%20Face-FFD21E?style=flat-square&logo=huggingface&logoColor=black) |
+| **Deployment** | ![Render](https://img.shields.io/badge/-Render-46E3B7?style=flat-square&logo=render&logoColor=white) |
 | **Training Environment** | ![Kaggle](https://img.shields.io/badge/-Kaggle-20BEFF?style=flat-square&logo=kaggle&logoColor=white) |
 
 </div>
@@ -132,6 +136,9 @@ graph LR
 emi-prediction-platform/
 ├── app.py                  # Streamlit multi-page application
 ├── requirements.txt        # Python dependencies
+├── scaler.pkl               # Fitted StandardScaler (training preprocessing)
+├── label_encoders.pkl       # Fitted LabelEncoders for categorical features
+├── target_encoder.pkl       # LabelEncoder for the eligibility target
 ├── secrets.toml.example    # Template for MLflow credentials (never commit real secrets)
 └── README.md                # You are here
 ```
@@ -155,7 +162,7 @@ pip install -r requirements.txt
 
 ### 3️⃣ Configure secrets
 
-Create a `.streamlit/secrets.toml` file (see `secrets.toml.example`):
+Create a `.streamlit/secrets.toml` file (see `secrets.toml.example`), or set the same three values as environment variables when deploying elsewhere:
 
 ```toml
 DAGSHUB_USERNAME = "your_username"
@@ -173,7 +180,7 @@ streamlit run app.py
 
 ## 🚀 Live Demo
 
-> 🔗 **Hugging Face Spaces:** _add your deployed Space link here_
+> 🔗 **App:** [emi-prediction-platform.onrender.com](https://emi-prediction-platform.onrender.com/)
 
 > 📈 **MLflow Experiments (DagsHub):** [View Experiments](https://dagshub.com/omm061812/emi-prediction-platform/experiments)
 
@@ -195,7 +202,7 @@ streamlit run app.py
 - [x] MLflow experiment tracking & model registry
 - [x] Streamlit multi-page app with CRUD
 - [x] MLflow dashboard integration
-- [ ] Public deployment on Hugging Face Spaces
+- [x] Public deployment on Render
 - [ ] CI/CD pipeline via GitHub Actions
 
 ---
@@ -204,7 +211,7 @@ streamlit run app.py
 
 ### 👤 Author
 
-**Ankit** — Internship Project, 2026
+**Ankit Dash** — Internship Project, 2026
 
 ⭐ If you found this useful, consider starring the repo!
 
