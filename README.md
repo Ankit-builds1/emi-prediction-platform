@@ -203,7 +203,7 @@ streamlit run app.py
 - [x] Streamlit multi-page app with CRUD
 - [x] MLflow dashboard integration
 - [x] Public deployment on Render
-- [ ] CI/CD pipeline via GitHub Actions
+- [x] CI/CD pipeline via GitHub Actions
 
 ---
 
